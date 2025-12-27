@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Smart Irrigation Dashboard</title>
+
+  <!-- Firebase Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+  <style>
+    body {
+      background: #eef2f7;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h1 {
+      color: #2563eb;
+      margin-bottom: 25px;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      margin: 15px auto;
+      width: 360px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px #cbd5e1;
+    }
+
+    select, button {
+      width: 85%;
+      padding: 12px;
+      margin: 10px 0;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+    }
+
+    button {
+      cursor: pointer;
+      background: #2563eb;
+      color: white;
+    }
+
+    button.off {
+      background: #dc2626;
+    }
+
+    .status {
+      font-weight: bold;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>🌱 Smart Irrigation Dashboard</h1>
+
+<!-- Sensor Data Card -->
+<div class="card">
+  <h2>Sensor Data</h2>
+  <p class="status">Moisture: <span id="moist">--</span>%</p>
+  <p class="status">Temperature: <span id="temp">--</span>°C</p>
+  <p class="status">Humidity: <span id="hum">--</span>%</p>
+</div>
+
+<!-- Relay Control -->
+<div class="card">
+  <h2>Manual Control</h2>
+  <button onclick="setRelay('ON')">Water ON</button>
+  <button class="off" onclick="setRelay('OFF')">Water OFF</button>
+  <p class="status">Relay: <span id="relayStatus">--</span></p>
+</div>
+
+<!-- Mode Control -->
+<div class="card">
+  <h2>Mode Control</h2>
+  <button onclick="setMode('AUTO')">Enable Auto</button>
+  <button class="off" onclick="setMode('SEMI_AUTO')">Disable Auto</button>
+  <p class="status">Current Mode: <span id="modeStatus">--</span></p>
+</div>
+
+<!-- Weather Forecast -->
+<div class="card">
+  <h2>Weather Forecast</h2>
+  <p><strong>Rain Probability:</strong> <span id="rainProb">--</span></p>
+  <button onclick="detectLocation()">Update Location Automatically</button>
+</div>
+
+<!-- Automatic Watering Settings -->
+<div class="card">
+  <h2>Automatic Watering Settings</h2>
+
+  <label>Watering Time</label><br>
+  <select id="timeSelect" onchange="saveSettings()">
+    <option value="5">05:00</option>
+    <option value="6">06:00</option>
+    <option value="7">07:00</option>
+    <option value="18">18:00</option>
+    <option value="19">19:00</option>
+  </select><br>
+
+  <label>Water Duration (Minutes)</label><br>
+  <select id="durationSelect" onchange="saveSettings()">
+    <option value="5">5 Minutes</option>
+    <option value="10">10 Minutes</option>
+    <option value="15">15 Minutes</option>
+    <option value="20">20 Minutes</option>
+  </select><br>
+
+  <label>Moisture Threshold</label><br>
+  <select id="moistureSelect" onchange="saveSettings()">
+    <option value="20">20%</option>
+    <option value="25">25%</option>
+    <option value="30">30%</option>
+    <option value="35">35%</option>
+  </select><br>
+
+  <label>Rain Probability Threshold</label><br>
+  <select id="rainSelect" onchange="saveSettings()">
+    <option value="40">40%</option>
+    <option value="50">50%</option>
+    <option value="60">60%</option>
+    <option value="70">70%</option>
+  </select>
+</div>
+
+<script>
+  // -------------------------
+  // Firebase Config (NEW DB)
+  // -------------------------
+  var firebaseConfig = {
+    apiKey: "dummy",
+    authDomain: "dummy",
+    databaseURL: "https://smart-irrigation-final-2743e-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "smart-irrigation-final-2743e",
+    storageBucket: "dummy",
+    messagingSenderId: "dummy",
+    appId: "dummy"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  var db = firebase.database();
+
+  // -------------------------
+  // Live Sensor Updates
+  // -------------------------
+  db.ref("sensorData").on("value", snap => {
+    let d = snap.val() || {};
+    document.getElementById("moist").innerText = d.moisture ?? "--";
+    document.getElementById("temp").innerText = d.temperature ?? "--";
+    document.getElementById("hum").innerText = d.humidity ?? "--";
+  });
+
+  // Relay Status
+  db.ref("control/relay").on("value", snap => {
+    document.getElementById("relayStatus").innerText = snap.val() ?? "--";
+  });
+
+  // Mode Status
+  db.ref("control/mode").on("value", snap => {
+    document.getElementById("modeStatus").innerText = snap.val() ?? "--";
+  });
+
+  function setRelay(state) {
+    db.ref("control").update({
+      mode: "MANUAL",
+      relay: state
+    });
+  }
+
+  function setMode(mode) {
+    db.ref("control").update({
+      mode: mode,
+      relay: "OFF"
+    });
+  }
+
+  // -------------------------
+  // Weather Info
+  // -------------------------
+  db.ref("weather").on("value", snap => {
+    let w = snap.val();
+    document.getElementById("rainProb").innerText =
+      w && w.rainProbability !== undefined ? w.rainProbability + "%" : "--";
+  });
+
+  // -------------------------
+  // Load Saved Settings
+  // -------------------------
+  db.ref("settings").on("value", snap => {
+    let s = snap.val() || {};
+    document.getElementById("timeSelect").value = s.waterHour ?? 6;
+    document.getElementById("durationSelect").value = s.waterDuration ?? 10;
+    document.getElementById("moistureSelect").value = s.moistureThreshold ?? 30;
+    document.getElementById("rainSelect").value = s.rainThreshold ?? 70;
+  });
+
+  function saveSettings() {
+    db.ref("settings").update({
+      waterHour: Number(document.getElementById("timeSelect").value),
+      waterDuration: Number(document.getElementById("durationSelect").value),
+      moistureThreshold: Number(document.getElementById("moistureSelect").value),
+      rainThreshold: Number(document.getElementById("rainSelect").value)
+    });
+  }
+
+  // -------------------------
+  // Auto Location Detection
+  // -------------------------
+  function detectLocation() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        db.ref("settings").update({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude
+        });
+        alert("Location updated");
+      });
+    }
+  }
+</script>
+
+</body>
+</html>
