@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <title>Smart Irrigation Dashboard</title>
 
+  <!-- ✅ MOBILE SUPPORT -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <!-- Firebase Scripts -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -12,28 +15,31 @@
     body {
       background: #eef2f7;
       font-family: Arial, sans-serif;
-      padding: 20px;
+      padding: 12px;
       text-align: center;
+      margin: 0;
     }
 
     h1 {
       color: #2563eb;
-      margin-bottom: 25px;
+      margin-bottom: 18px;
+      font-size: 1.4rem;
     }
 
     .card {
       background: white;
-      padding: 20px;
-      margin: 15px auto;
-      width: 360px;
+      padding: 16px;
+      margin: 12px auto;
+      width: 100%;
+      max-width: 420px;
       border-radius: 12px;
       box-shadow: 0 0 10px #cbd5e1;
     }
 
     select, button {
-      width: 85%;
-      padding: 12px;
-      margin: 10px 0;
+      width: 100%;
+      padding: 14px;
+      margin: 8px 0;
       font-size: 16px;
       border-radius: 8px;
       border: 1px solid #cbd5e1;
@@ -43,6 +49,7 @@
       cursor: pointer;
       background: #2563eb;
       color: white;
+      font-weight: bold;
     }
 
     button.off {
@@ -51,7 +58,8 @@
 
     .status {
       font-weight: bold;
-      margin-top: 10px;
+      margin-top: 8px;
+      font-size: 0.95rem;
     }
   </style>
 </head>
@@ -80,7 +88,7 @@
 <div class="card">
   <h2>Mode Control</h2>
   <button onclick="setMode('AUTO')">Enable Auto</button>
-  <button class="off" onclick="setMode('SEMI_AUTO')">Disable Auto</button>
+  <button class="off" onclick="setMode('SEMI_AUTO')">Semi Auto</button>
   <p class="status">Current Mode: <span id="modeStatus">--</span></p>
 </div>
 
@@ -129,9 +137,32 @@
   </select>
 </div>
 
+<!-- ✅ INSTALL POPUP -->
+<div id="installPopup" style="
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  padding: 16px;
+  max-width: 340px;
+  width: 90%;
+  display: none;
+  z-index: 9999;
+">
+  <strong>Install Smart Irrigation</strong>
+  <p style="font-size:14px;margin:8px 0;">
+    Add this app to your home screen for quick access.
+  </p>
+  <button onclick="installApp()">Install</button>
+  <button class="off" onclick="closeInstallPopup()">Later</button>
+</div>
+
 <script>
   // -------------------------
-  // Firebase Config (NEW DB)
+  // Firebase Config
   // -------------------------
   var firebaseConfig = {
     apiKey: "dummy",
@@ -146,82 +177,80 @@
   firebase.initializeApp(firebaseConfig);
   var db = firebase.database();
 
-  // -------------------------
-  // Live Sensor Updates
-  // -------------------------
   db.ref("sensorData").on("value", snap => {
     let d = snap.val() || {};
-    document.getElementById("moist").innerText = d.moisture ?? "--";
-    document.getElementById("temp").innerText = d.temperature ?? "--";
-    document.getElementById("hum").innerText = d.humidity ?? "--";
+    moist.innerText = d.moisture ?? "--";
+    temp.innerText = d.temperature ?? "--";
+    hum.innerText = d.humidity ?? "--";
   });
 
-  // Relay Status
   db.ref("control/relay").on("value", snap => {
-    document.getElementById("relayStatus").innerText = snap.val() ?? "--";
+    relayStatus.innerText = snap.val() ?? "--";
   });
 
-  // Mode Status
   db.ref("control/mode").on("value", snap => {
-    document.getElementById("modeStatus").innerText = snap.val() ?? "--";
+    modeStatus.innerText = snap.val() ?? "--";
   });
 
   function setRelay(state) {
-    db.ref("control").update({
-      mode: "MANUAL",
-      relay: state
-    });
+    db.ref("control").update({ mode: "MANUAL", relay: state });
   }
 
   function setMode(mode) {
-    db.ref("control").update({
-      mode: mode,
-      relay: "OFF"
-    });
+    db.ref("control").update({ mode: mode, relay: "OFF" });
   }
 
-  // -------------------------
-  // Weather Info
-  // -------------------------
   db.ref("weather").on("value", snap => {
     let w = snap.val();
-    document.getElementById("rainProb").innerText =
-      w && w.rainProbability !== undefined ? w.rainProbability + "%" : "--";
+    rainProb.innerText = w && w.rainProbability !== undefined ? w.rainProbability + "%" : "--";
   });
 
-  // -------------------------
-  // Load Saved Settings
-  // -------------------------
   db.ref("settings").on("value", snap => {
     let s = snap.val() || {};
-    document.getElementById("timeSelect").value = s.waterHour ?? 6;
-    document.getElementById("durationSelect").value = s.waterDuration ?? 10;
-    document.getElementById("moistureSelect").value = s.moistureThreshold ?? 30;
-    document.getElementById("rainSelect").value = s.rainThreshold ?? 70;
+    timeSelect.value = s.waterHour ?? 6;
+    durationSelect.value = s.waterDuration ?? 10;
+    moistureSelect.value = s.moistureThreshold ?? 30;
+    rainSelect.value = s.rainThreshold ?? 70;
   });
 
   function saveSettings() {
     db.ref("settings").update({
-      waterHour: Number(document.getElementById("timeSelect").value),
-      waterDuration: Number(document.getElementById("durationSelect").value),
-      moistureThreshold: Number(document.getElementById("moistureSelect").value),
-      rainThreshold: Number(document.getElementById("rainSelect").value)
+      waterHour: +timeSelect.value,
+      waterDuration: +durationSelect.value,
+      moistureThreshold: +moistureSelect.value,
+      rainThreshold: +rainSelect.value
     });
   }
 
-  // -------------------------
-  // Auto Location Detection
-  // -------------------------
   function detectLocation() {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(pos => {
-        db.ref("settings").update({
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude
-        });
-        alert("Location updated");
+    navigator.geolocation?.getCurrentPosition(pos => {
+      db.ref("settings").update({
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude
       });
+      alert("Location updated");
+    });
+  }
+
+  // ✅ INSTALL PROMPT LOGIC
+  let deferredPrompt;
+  window.addEventListener("beforeinstallprompt", e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (!localStorage.getItem("installDismissed")) {
+      installPopup.style.display = "block";
     }
+  });
+
+  function installApp() {
+    installPopup.style.display = "none";
+    deferredPrompt.prompt();
+    deferredPrompt = null;
+  }
+
+  function closeInstallPopup() {
+    installPopup.style.display = "none";
+    localStorage.setItem("installDismissed", "1");
   }
 </script>
 
