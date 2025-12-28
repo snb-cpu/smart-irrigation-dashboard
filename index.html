@@ -7,6 +7,10 @@
   <!-- ✅ MOBILE SUPPORT -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- ✅ PWA REQUIRED (ONLY ADDITION) -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+
   <!-- Firebase Scripts -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -68,7 +72,6 @@
 
 <h1>🌱 Smart Irrigation Dashboard</h1>
 
-<!-- Sensor Data Card -->
 <div class="card">
   <h2>Sensor Data</h2>
   <p class="status">Moisture: <span id="moist">--</span>%</p>
@@ -76,7 +79,6 @@
   <p class="status">Humidity: <span id="hum">--</span>%</p>
 </div>
 
-<!-- Relay Control -->
 <div class="card">
   <h2>Manual Control</h2>
   <button onclick="setRelay('ON')">Water ON</button>
@@ -84,7 +86,6 @@
   <p class="status">Relay: <span id="relayStatus">--</span></p>
 </div>
 
-<!-- Mode Control -->
 <div class="card">
   <h2>Mode Control</h2>
   <button onclick="setMode('AUTO')">Enable Auto</button>
@@ -92,14 +93,12 @@
   <p class="status">Current Mode: <span id="modeStatus">--</span></p>
 </div>
 
-<!-- Weather Forecast -->
 <div class="card">
   <h2>Weather Forecast</h2>
   <p><strong>Rain Probability:</strong> <span id="rainProb">--</span></p>
   <button onclick="detectLocation()">Update Location Automatically</button>
 </div>
 
-<!-- Automatic Watering Settings -->
 <div class="card">
   <h2>Automatic Watering Settings</h2>
 
@@ -137,7 +136,6 @@
   </select>
 </div>
 
-<!-- ✅ INSTALL POPUP -->
 <div id="installPopup" style="
   position: fixed;
   bottom: 20px;
@@ -161,9 +159,6 @@
 </div>
 
 <script>
-  // -------------------------
-  // Firebase Config
-  // -------------------------
   var firebaseConfig = {
     apiKey: "dummy",
     authDomain: "dummy",
@@ -232,7 +227,6 @@
     });
   }
 
-  // ✅ INSTALL PROMPT LOGIC
   let deferredPrompt;
   window.addEventListener("beforeinstallprompt", e => {
     e.preventDefault();
