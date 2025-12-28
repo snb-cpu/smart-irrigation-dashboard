@@ -1,0 +1,15 @@
+{
+  "name": "Smart Irrigation",
+  "short_name": "Irrigation",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#eef2f7",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2909/2909767.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
